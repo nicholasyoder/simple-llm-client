@@ -423,7 +423,7 @@ QPushButton#sendBtn {
     border: none;
     border-radius: 8px;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 20px;
 }
 QPushButton#sendBtn:hover { background-color: #b4d0ff; }
 QPushButton#sendBtn:disabled { background-color: #45475a; color: #6c7086; }
@@ -432,7 +432,7 @@ QPushButton#clearBtn {
     color: #a6adc8;
     border: none;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 16px;
     padding: 4px 10px;
 }
 QPushButton#clearBtn:hover { background-color: #45475a; }
@@ -596,9 +596,10 @@ class ChatWindow(QMainWindow):
         self._model_combo.currentTextChanged.connect(self._on_model_change)
         row.addWidget(self._model_combo)
 
-        clear_btn = QPushButton("Clear")
+        clear_btn = QPushButton("🗑")
         clear_btn.setObjectName("clearBtn")
         clear_btn.setFixedHeight(28)
+        clear_btn.setToolTip("Clear conversation")
         clear_btn.clicked.connect(self._clear_chat)
         row.addWidget(clear_btn)
 
@@ -618,9 +619,10 @@ class ChatWindow(QMainWindow):
         self._input.installEventFilter(self)
         row.addWidget(self._input, 1)
 
-        self._send_btn = QPushButton("Send")
+        self._send_btn = QPushButton("▲")
         self._send_btn.setObjectName("sendBtn")
         self._send_btn.setFixedSize(70, 72)
+        self._send_btn.setToolTip("Send message (Enter)")
         self._send_btn.clicked.connect(self._send)
         row.addWidget(self._send_btn)
 
