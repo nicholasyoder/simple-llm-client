@@ -5,7 +5,7 @@ import argparse
 import json
 import os
 import sys
-import threading
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -16,7 +16,7 @@ from PySide6.QtDBus import QDBusAbstractAdaptor, QDBusConnection
 from PySide6.QtGui import QAction, QCursor, QIcon, QKeySequence, QColor
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
-    QTextEdit, QPushButton, QLabel, QSystemTrayIcon, QMenu,
+    QTextEdit, QPushButton, QLabel, QSystemTrayIcon, QMenu, QMessageBox,
     QComboBox, QSizePolicy,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -27,30 +27,63 @@ load_dotenv()
 
 # ── Config persistence ────────────────────────────────────────────────────────
 
-CONFIG_PATH = Path.home() / ".config" / "groq-chat" / "config.json"
+CONFIG_DIR = Path.home() / ".config" / "groq-chat"
+CONFIG_PATH = CONFIG_DIR / "config.json"
+CONVERSATIONS_DIR = CONFIG_DIR / "conversations"
 DEFAULT_W, DEFAULT_H = 740, 660
 RESIZE_MARGIN = 8
 
 
-def load_window_size() -> tuple[int, int]:
+def load_config() -> dict:
+    """Load full configuration including window size, model, and system prompt."""
     try:
-        data = json.loads(CONFIG_PATH.read_text())
-        return int(data["width"]), int(data["height"])
+        return json.loads(CONFIG_PATH.read_text())
     except Exception:
-        return DEFAULT_W, DEFAULT_H
+        return {"width": DEFAULT_W, "height": DEFAULT_H}
+
+
+def save_config(config: dict) -> None:
+    """Save configuration to disk."""
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_PATH.write_text(json.dumps(config, indent=2))
+
+
+def load_window_size() -> tuple[int, int]:
+    """Load saved window dimensions."""
+    config = load_config()
+    return int(config.get("width", DEFAULT_W)), int(config.get("height", DEFAULT_H))
 
 
 def save_window_size(w: int, h: int) -> None:
-    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    """Save window dimensions to config."""
     try:
-        existing = json.loads(CONFIG_PATH.read_text())
+        config = load_config()
     except Exception:
-        existing = {}
-    existing.update({"width": w, "height": h})
-    CONFIG_PATH.write_text(json.dumps(existing, indent=2))
+        config = {}
+    config.update({"width": w, "height": h})
+    save_config(config)
 
 
-MODELS = [
+def save_conversation(messages: list[dict], filename: Optional[str] = None) -> None:
+    """Save conversation history to a JSON file."""
+    CONVERSATIONS_DIR.mkdir(parents=True, exist_ok=True)
+    if filename is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"conversation_{timestamp}.json"
+    filepath = CONVERSATIONS_DIR / filename
+    filepath.write_text(json.dumps(messages, indent=2))
+
+
+def load_conversation(filename: str) -> list[dict]:
+    """Load conversation history from a JSON file."""
+    filepath = CONVERSATIONS_DIR / filename
+    return json.loads(filepath.read_text())
+
+
+DEFAULT_MODEL = "llama-3.3-70b-versatile"
+
+# Fallback models if API call fails
+FALLBACK_MODELS = [
     "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
     "meta-llama/llama-4-maverick-17b-128e-instruct",
@@ -61,7 +94,21 @@ MODELS = [
     "gemma2-9b-it",
 ]
 
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+
+def fetch_available_models(client: Groq) -> list[str]:
+    """Fetch available models from Groq API."""
+    try:
+        models_response = client.models.list()
+        # Filter for chat models and sort by ID
+        chat_models = [
+            model.id
+            for model in models_response.data
+            if hasattr(model, 'id')
+        ]
+        return sorted(chat_models) if chat_models else FALLBACK_MODELS
+    except Exception as e:
+        print(f"Failed to fetch models from API: {e}, using fallback list", file=sys.stderr)
+        return FALLBACK_MODELS
 
 
 # ── HTML page template ────────────────────────────────────────────────────────
@@ -133,12 +180,40 @@ html, body {
   font-size: 13px;
   color: #cba6f7;
 }
+.code-block-wrapper {
+  position: relative;
+  margin: 10px 0;
+}
+.code-block-wrapper .copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #313244;
+  color: #cdd6f4;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+}
+.code-block-wrapper:hover .copy-btn {
+  opacity: 1;
+}
+.code-block-wrapper .copy-btn:hover {
+  background: #45475a;
+}
+.code-block-wrapper .copy-btn:active {
+  background: #89b4fa;
+  color: #1e1e2e;
+}
 .content pre {
   background: #11111b;
   border-radius: 8px;
   padding: 14px;
   overflow-x: auto;
-  margin: 10px 0;
+  margin: 0;
   border: 1px solid #313244;
 }
 .content pre code {
@@ -186,6 +261,51 @@ function escapeHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+function copyToClipboard(text) {
+  // Create a temporary textarea element
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    document.execCommand('copy');
+    return true;
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    return false;
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
+function wrapCodeBlocks(container) {
+  container.querySelectorAll('pre').forEach(pre => {
+    if (pre.parentElement.classList.contains('code-block-wrapper')) return;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'code-block-wrapper';
+    pre.parentNode.insertBefore(wrapper, pre);
+    wrapper.appendChild(pre);
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'copy-btn';
+    copyBtn.textContent = 'Copy';
+    copyBtn.onclick = function() {
+      const code = pre.querySelector('code') || pre;
+      if (copyToClipboard(code.textContent)) {
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+      } else {
+        copyBtn.textContent = 'Failed';
+        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+      }
+    };
+    wrapper.appendChild(copyBtn);
+  });
+}
+
 function addMessage(id, role, htmlContent, showCursor) {
   let el = document.createElement('div');
   el.id = id;
@@ -195,6 +315,7 @@ function addMessage(id, role, htmlContent, showCursor) {
     '<div class="content">' + htmlContent + (showCursor ? '<span class="cursor"></span>' : '') + '</div>';
   document.getElementById('chat').appendChild(el);
   el.scrollIntoView({behavior: 'instant', block: 'end'});
+  wrapCodeBlocks(el);
 }
 
 function updateMessage(id, htmlContent, showCursor) {
@@ -204,6 +325,7 @@ function updateMessage(id, htmlContent, showCursor) {
     htmlContent + (showCursor ? '<span class="cursor"></span>' : '');
   el.scrollIntoView({behavior: 'instant', block: 'end'});
   el.querySelectorAll('pre code').forEach(b => { hljs.highlightElement(b); });
+  wrapCodeBlocks(el);
 }
 
 function clearChat() {
@@ -347,12 +469,13 @@ class ChatWindow(QMainWindow):
     show_signal = Signal()
     hide_signal = Signal()
 
-    def __init__(self, client: Groq, model: str, system_prompt: Optional[str] = None):
+    def __init__(self, client: Groq, model: str, system_prompt: Optional[str] = None, available_models: Optional[list[str]] = None):
         super().__init__()
         self.client = client
         self.current_model = model
         self.system_prompt = system_prompt
         self.messages: list[dict] = []
+        self.available_models = available_models or FALLBACK_MODELS
 
         self._worker: Optional[StreamWorker] = None
         self._stream_buf = ""
@@ -458,9 +581,9 @@ class ChatWindow(QMainWindow):
         row.addStretch()
 
         self._model_combo = QComboBox()
-        for m in MODELS:
+        for m in self.available_models:
             self._model_combo.addItem(m)
-        idx = MODELS.index(self.current_model) if self.current_model in MODELS else 0
+        idx = self.available_models.index(self.current_model) if self.current_model in self.available_models else 0
         self._model_combo.setCurrentIndex(idx)
         self._model_combo.currentTextChanged.connect(self._on_model_change)
         row.addWidget(self._model_combo)
@@ -597,14 +720,35 @@ class ChatWindow(QMainWindow):
     def _on_error(self, error: str):
         self._flush_timer.stop()
         self._stream_buf = ""
-        self.messages.pop()  # remove empty assistant
-        self.messages.pop()  # remove user message
+
+        # Remove the empty assistant message and the user message from history
+        if len(self.messages) >= 2:
+            self.messages.pop()  # remove empty assistant
+            self.messages.pop()  # remove user message
+
+        # Display user-friendly error message
         import html as html_lib
-        err_html = f'<span style="color:#f38ba8">Error: {html_lib.escape(error)}</span>'
+        error_msg = error
+        if "rate_limit" in error.lower() or "429" in error:
+            error_msg = "Rate limit exceeded. Please wait a moment and try again."
+        elif "authentication" in error.lower() or "401" in error:
+            error_msg = "Authentication failed. Please check your API key."
+        elif "timeout" in error.lower():
+            error_msg = "Request timed out. Please try again."
+
+        err_html = f'<span style="color:#f38ba8">⚠️ Error: {html_lib.escape(error_msg)}</span>'
         self._run_js(
             f"updateMessage(`{js_string(self._current_msg_id)}`, `{js_string(err_html)}`, false)"
         )
         self._send_btn.setEnabled(True)
+
+        # Show popup for critical errors
+        if "authentication" in error.lower() or "401" in error:
+            QMessageBox.warning(
+                self,
+                "Authentication Error",
+                "Failed to authenticate with Groq API. Please check your API key in the .env file.",
+            )
 
     def _run_js(self, js: str):
         if self._page_ready:
@@ -631,33 +775,6 @@ class ChatWindow(QMainWindow):
         self.raise_()
         self.activateWindow()
         self._input.setFocus()
-
-
-# ── Global hotkey via pynput ──────────────────────────────────────────────────
-
-def start_hotkey_listener(hotkey_combo: str, callback):
-    """
-    Start a pynput GlobalHotKeys listener in a daemon thread.
-    hotkey_combo should be a pynput combo string like '<ctrl>+<space>' or '<super>+g'.
-    """
-    try:
-        from pynput import keyboard as kb
-
-        hotkeys = {hotkey_combo: callback}
-        listener = kb.GlobalHotKeys(hotkeys)
-        t = threading.Thread(target=listener.run, daemon=True)
-        t.start()
-        return listener
-    except ImportError:
-        print(
-            "pynput not installed — global hotkey disabled.\n"
-            "Install with: .venv/bin/pip install pynput",
-            file=sys.stderr,
-        )
-        return None
-    except Exception as e:
-        print(f"Could not register hotkey '{hotkey_combo}': {e}", file=sys.stderr)
-        return None
 
 
 # ── Draggable header ─────────────────────────────────────────────────────────
@@ -814,11 +931,6 @@ def main():
     parser.add_argument("-s", "--system", default=None, help="System prompt")
     parser.add_argument("--api-key", default=None)
     parser.add_argument(
-        "--hotkey",
-        default=None,
-        help="Global hotkey to toggle window (pynput format, e.g. '<ctrl>+<space>')",
-    )
-    parser.add_argument(
         "--no-tray",
         action="store_true",
         help="Don't show system tray icon",
@@ -832,11 +944,16 @@ def main():
 
     client = Groq(api_key=api_key)
 
+    # Fetch available models from API
+    print("Fetching available models...")
+    available_models = fetch_available_models(client)
+    print(f"Loaded {len(available_models)} models")
+
     app = QApplication(sys.argv)
     app.setApplicationName("Groq Chat")
     app.setQuitOnLastWindowClosed(False)
 
-    window = ChatWindow(client, args.model, args.system)
+    window = ChatWindow(client, args.model, args.system, available_models)
     window.show()
 
     # DBus
@@ -862,17 +979,13 @@ def main():
         quit_action.triggered.connect(app.quit)
         tray_menu.addAction(quit_action)
         tray.setContextMenu(tray_menu)
-        tray.setToolTip("Groq Chat" + (f" ({args.hotkey})" if args.hotkey else ""))
+        tray.setToolTip("Groq Chat")
         tray.activated.connect(
             lambda reason: window.toggle()
             if reason == QSystemTrayIcon.ActivationReason.Trigger
             else None
         )
         tray.show()
-
-    # Global hotkey
-    if args.hotkey:
-        start_hotkey_listener(args.hotkey, window.toggle_signal.emit)
 
     sys.exit(app.exec())
 

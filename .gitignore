@@ -1,2 +1,12 @@
+# Python
 __pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+# Environment variables
 .env
+
+# Application config
+.config/groq-chat/

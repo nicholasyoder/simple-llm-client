@@ -67,7 +67,7 @@ def read_multiline_input(prompt_str: str) -> Optional[str]:
     return "\n".join(lines)
 
 
-def stream_response(client: Groq, messages: list, model: str) -> str:
+def stream_response(client: Groq, messages: list[dict], model: str) -> str:
     """Stream a chat completion and return the full response text."""
     full_text = ""
 
@@ -92,7 +92,7 @@ def stream_response(client: Groq, messages: list, model: str) -> str:
     return full_text
 
 
-def print_history(messages: list, system_prompt: Optional[str]) -> None:
+def print_history(messages: list[dict], system_prompt: Optional[str]) -> None:
     if system_prompt:
         console.print(Panel(system_prompt, title="[bold yellow]system[/bold yellow]", border_style="yellow"))
     if not messages:
@@ -113,7 +113,7 @@ def print_history(messages: list, system_prompt: Optional[str]) -> None:
             )
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Groq CLI chat client")
     parser.add_argument("-m", "--model", default=DEFAULT_MODEL, help="Model to use")
     parser.add_argument("-s", "--system", default=None, help="System prompt")
@@ -128,7 +128,7 @@ def main():
     client = Groq(api_key=api_key)
     model = args.model
     system_prompt: Optional[str] = args.system
-    messages: list = []
+    messages: list[dict] = []
 
     console.print(
         Panel(
