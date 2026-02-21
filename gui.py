@@ -250,6 +250,20 @@ html, body {
   margin-left: 1px;
 }
 @keyframes blink { 50% { opacity: 0; } }
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: #181825;
+}
+::-webkit-scrollbar-thumb {
+  background: #45475a;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #585b70;
+}
 </style>
 </head>
 <body>
@@ -394,14 +408,16 @@ class StreamWorker(QThread):
 APP_STYLE = """
 QMainWindow, QWidget#root {
     background-color: #1e1e2e;
+    border-radius: 12px;
 }
 QWidget#footer {
-    background-color: #181825;
+    background-color: #1e1e2e;
     border-top: 1px solid #313244;
 }
 QWidget#header {
     background-color: #181825;
-    border-bottom: 1px solid #313244;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
 }
 QTextEdit {
     background-color: #2a2a3d;
@@ -420,7 +436,7 @@ QPushButton#sendBtn {
     border: none;
     border-radius: 8px;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 20px;
 }
 QPushButton#sendBtn:hover { background-color: #b4d0ff; }
 QPushButton#sendBtn:disabled { background-color: #45475a; color: #6c7086; }
@@ -429,7 +445,7 @@ QPushButton#clearBtn {
     color: #a6adc8;
     border: none;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 16px;
     padding: 4px 10px;
 }
 QPushButton#clearBtn:hover { background-color: #45475a; }
@@ -507,6 +523,8 @@ class ChatWindow(QMainWindow):
             | Qt.WindowType.WindowStaysOnTopHint
             | Qt.WindowType.FramelessWindowHint
         )
+        # Enable transparency for rounded corners
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self._center_on_screen()
 
         root = QWidget()
@@ -555,6 +573,13 @@ class ChatWindow(QMainWindow):
         self._header = self._build_header()
         content_layout.addWidget(self._header)
 
+        # Add separator line between header and content
+        separator = QWidget()
+        separator.setObjectName("separator")
+        separator.setFixedHeight(1)
+        separator.setStyleSheet("background-color: #313244;")
+        content_layout.addWidget(separator)
+
         self._view = QWebEngineView()
         self._view.settings().setAttribute(
             QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
@@ -574,7 +599,7 @@ class ChatWindow(QMainWindow):
         header.setObjectName("header")
         header.setFixedHeight(50)
         row = QHBoxLayout(header)
-        row.setContentsMargins(16, 0, 16, 0)
+        row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(10)
 
         title = QLabel("Groq Chat")
@@ -591,9 +616,10 @@ class ChatWindow(QMainWindow):
         self._model_combo.currentTextChanged.connect(self._on_model_change)
         row.addWidget(self._model_combo)
 
-        clear_btn = QPushButton("Clear")
+        clear_btn = QPushButton("🗑")
         clear_btn.setObjectName("clearBtn")
-        clear_btn.setFixedHeight(28)
+        clear_btn.setFixedSize(32, 28)
+        clear_btn.setToolTip("Clear conversation")
         clear_btn.clicked.connect(self._clear_chat)
         row.addWidget(clear_btn)
 
@@ -603,7 +629,7 @@ class ChatWindow(QMainWindow):
         footer = QWidget()
         footer.setObjectName("footer")
         row = QHBoxLayout(footer)
-        row.setContentsMargins(12, 10, 12, 10)
+        row.setContentsMargins(0, 10, 0, 0)
         row.setSpacing(8)
 
         self._input = QTextEdit()
@@ -612,12 +638,6 @@ class ChatWindow(QMainWindow):
         self._input.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._input.installEventFilter(self)
         row.addWidget(self._input, 1)
-
-        self._send_btn = QPushButton("Send")
-        self._send_btn.setObjectName("sendBtn")
-        self._send_btn.setFixedSize(70, 72)
-        self._send_btn.clicked.connect(self._send)
-        row.addWidget(self._send_btn)
 
         return footer
 
@@ -687,7 +707,6 @@ class ChatWindow(QMainWindow):
             return
 
         self._input.clear()
-        self._send_btn.setEnabled(False)
 
         # Show user message
         msg_id = f"msg-{len(self.messages)}"
@@ -747,7 +766,6 @@ class ChatWindow(QMainWindow):
         self._run_js(
             f"updateMessage(`{js_string(self._current_msg_id)}`, `{js_string(rendered)}`, false)"
         )
-        self._send_btn.setEnabled(True)
         self._input.setFocus()
 
     def _on_error(self, error: str):
@@ -773,7 +791,6 @@ class ChatWindow(QMainWindow):
         self._run_js(
             f"updateMessage(`{js_string(self._current_msg_id)}`, `{js_string(err_html)}`, false)"
         )
-        self._send_btn.setEnabled(True)
 
         # Show popup for critical errors
         if "authentication" in error.lower() or "401" in error:
@@ -987,7 +1004,7 @@ def main():
     app.setQuitOnLastWindowClosed(False)
 
     window = ChatWindow(client, args.model, args.system, available_models)
-    window.show()
+    # Don't show window on startup - wait for DBus signal or tray click
 
     # DBus
     register_dbus_service(window)
