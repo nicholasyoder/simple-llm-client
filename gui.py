@@ -31,7 +31,7 @@ CONFIG_DIR = Path.home() / ".config" / "groq-chat"
 CONFIG_PATH = CONFIG_DIR / "config.json"
 CONVERSATIONS_DIR = CONFIG_DIR / "conversations"
 DEFAULT_W, DEFAULT_H = 740, 660
-RESIZE_MARGIN = 8
+WIDGET_MARGINS = 8
 
 
 def load_config() -> dict:
@@ -442,11 +442,13 @@ QPushButton#sendBtn:hover { background-color: #b4d0ff; }
 QPushButton#sendBtn:disabled { background-color: #45475a; color: #6c7086; }
 QPushButton#clearBtn {
     background-color: #313244;
-    color: #a6adc8;
-    border: none;
+    color: #cdd6f4;
+    border: 1px solid #45475a;
     border-radius: 6px;
-    font-size: 16px;
-    padding: 4px 10px;
+    padding: 0px;
+    font-size: 19px;
+    min-width: 28px;
+    min-height: 28px;
 }
 QPushButton#clearBtn:hover { background-color: #45475a; }
 QComboBox {
@@ -454,9 +456,9 @@ QComboBox {
     color: #cdd6f4;
     border: 1px solid #45475a;
     border-radius: 6px;
-    padding: 3px 8px;
+    padding: 0px 8px;
     font-size: 12px;
-    min-width: 200px;
+    min-height: 28px;
 }
 QComboBox::drop-down { border: none; width: 20px; }
 QComboBox::down-arrow { width: 10px; }
@@ -470,7 +472,8 @@ QComboBox QAbstractItemView {
 QLabel#title {
     color: #cdd6f4;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 15px;
+    padding-left: 4px;
 }
 QLabel#hotkey-hint {
     color: #6c7086;
@@ -532,8 +535,6 @@ class ChatWindow(QMainWindow):
         self.setCentralWidget(root)
         self._root = root
 
-        M = RESIZE_MARGIN
-
         # 3×3 grid: resize strips occupy the 8 outer cells, content fills center.
         grid = QGridLayout(root)
         grid.setContentsMargins(0, 0, 0, 0)
@@ -554,11 +555,11 @@ class ChatWindow(QMainWindow):
         r  = strip(                       right=True,        cursor=Qt.CursorShape.SizeHorCursor)
 
         for corner in (tl, tr, br, bl):
-            corner.setFixedSize(M, M)
+            corner.setFixedSize(WIDGET_MARGINS, WIDGET_MARGINS)
         for edge in (t, b):
-            edge.setFixedHeight(M)
+            edge.setFixedHeight(WIDGET_MARGINS)
         for edge in (l, r):
-            edge.setFixedWidth(M)
+            edge.setFixedWidth(WIDGET_MARGINS)
 
         grid.addWidget(tl, 0, 0); grid.addWidget(t,  0, 1); grid.addWidget(tr, 0, 2)
         grid.addWidget(l,  1, 0);                            grid.addWidget(r,  1, 2)
@@ -597,10 +598,9 @@ class ChatWindow(QMainWindow):
     def _build_header(self) -> QWidget:
         header = _DraggableHeader()
         header.setObjectName("header")
-        header.setFixedHeight(50)
         row = QHBoxLayout(header)
-        row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(10)
+        row.setContentsMargins(0, 0, 0, WIDGET_MARGINS)
+        row.setSpacing(WIDGET_MARGINS)
 
         title = QLabel("Groq Chat")
         title.setObjectName("title")
@@ -618,7 +618,6 @@ class ChatWindow(QMainWindow):
 
         clear_btn = QPushButton("🗑")
         clear_btn.setObjectName("clearBtn")
-        clear_btn.setFixedSize(32, 28)
         clear_btn.setToolTip("Clear conversation")
         clear_btn.clicked.connect(self._clear_chat)
         row.addWidget(clear_btn)
@@ -629,8 +628,8 @@ class ChatWindow(QMainWindow):
         footer = QWidget()
         footer.setObjectName("footer")
         row = QHBoxLayout(footer)
-        row.setContentsMargins(0, 10, 0, 0)
-        row.setSpacing(8)
+        row.setContentsMargins(0, WIDGET_MARGINS, 0, 0)
+        row.setSpacing(WIDGET_MARGINS)
 
         self._input = QTextEdit()
         self._input.setPlaceholderText("Message… (Enter to send, Shift+Enter for newline)")

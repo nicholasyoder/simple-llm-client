@@ -10,3 +10,6 @@ __pycache__/
 
 # Application config
 .config/groq-chat/
+
+# IDE dirs
+.idea/
