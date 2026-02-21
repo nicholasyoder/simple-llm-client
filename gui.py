@@ -705,6 +705,12 @@ class ChatWindow(QMainWindow):
         if not text:
             return
 
+        # Handle commands
+        if text == "/clear":
+            self._input.clear()
+            self._clear_chat()
+            return
+
         self._input.clear()
 
         # Show user message
