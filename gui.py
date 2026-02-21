@@ -394,13 +394,16 @@ class StreamWorker(QThread):
 APP_STYLE = """
 QMainWindow, QWidget#root {
     background-color: #1e1e2e;
+    border-radius: 12px;
 }
 QWidget#footer {
-    background-color: #181825;
+    background-color: #1e1e2e;
     border-top: 1px solid #313244;
 }
 QWidget#header {
     background-color: #181825;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
     border-bottom: 1px solid #313244;
 }
 QTextEdit {
@@ -507,6 +510,8 @@ class ChatWindow(QMainWindow):
             | Qt.WindowType.WindowStaysOnTopHint
             | Qt.WindowType.FramelessWindowHint
         )
+        # Enable transparency for rounded corners
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self._center_on_screen()
 
         root = QWidget()
