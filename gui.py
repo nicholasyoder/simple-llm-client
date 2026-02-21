@@ -1016,13 +1016,19 @@ def main():
 
     # System tray
     if not args.no_tray:
-        tray_icon = QIcon.fromTheme("dialog-question")
-        if tray_icon.isNull():
-            # Fallback: create a simple colored icon
-            from PySide6.QtGui import QPixmap, QPainter
-            px = QPixmap(22, 22)
-            px.fill(QColor("#89b4fa"))
-            tray_icon = QIcon(px)
+        # Load custom icon from SVG file
+        icon_path = Path(__file__).parent / "icon.svg"
+        if icon_path.exists():
+            tray_icon = QIcon(str(icon_path))
+        else:
+            # Fallback: try theme icon
+            tray_icon = QIcon.fromTheme("dialog-question")
+            if tray_icon.isNull():
+                # Last resort: create a simple colored icon
+                from PySide6.QtGui import QPixmap
+                px = QPixmap(22, 22)
+                px.fill(QColor("#89b4fa"))
+                tray_icon = QIcon(px)
 
         tray = QSystemTrayIcon(tray_icon, app)
         tray_menu = QMenu()
