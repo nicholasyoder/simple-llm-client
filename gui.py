@@ -418,7 +418,6 @@ QWidget#header {
     background-color: #181825;
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
-    border-bottom: 1px solid #313244;
 }
 QTextEdit {
     background-color: #2a2a3d;
@@ -574,6 +573,13 @@ class ChatWindow(QMainWindow):
         self._header = self._build_header()
         content_layout.addWidget(self._header)
 
+        # Add separator line between header and content
+        separator = QWidget()
+        separator.setObjectName("separator")
+        separator.setFixedHeight(1)
+        separator.setStyleSheet("background-color: #313244;")
+        content_layout.addWidget(separator)
+
         self._view = QWebEngineView()
         self._view.settings().setAttribute(
             QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
@@ -612,7 +618,7 @@ class ChatWindow(QMainWindow):
 
         clear_btn = QPushButton("🗑")
         clear_btn.setObjectName("clearBtn")
-        clear_btn.setFixedHeight(28)
+        clear_btn.setFixedSize(32, 28)
         clear_btn.setToolTip("Clear conversation")
         clear_btn.clicked.connect(self._clear_chat)
         row.addWidget(clear_btn)
