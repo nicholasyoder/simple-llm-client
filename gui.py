@@ -491,6 +491,9 @@ class ChatWindow(QMainWindow):
         self.hide_signal.connect(self.hide)
         self._setup_ui()
 
+        # Install global event filter for keyboard focus management
+        self.installEventFilter(self)
+
     # ── UI setup ──────────────────────────────────────────────────────────────
 
     def _setup_ui(self):
@@ -620,18 +623,48 @@ class ChatWindow(QMainWindow):
 
     # ── Event handling ────────────────────────────────────────────────────────
 
+    def changeEvent(self, event):
+        """Hide window when it loses focus (user clicks outside)."""
+        if event.type() == QEvent.Type.ActivationChange and not self.isActiveWindow():
+            self.hide()
+        super().changeEvent(event)
+
     def eventFilter(self, obj, event):
         from PySide6.QtCore import QEvent
+
+        # Handle Enter key in input box
         if obj is self._input and event.type() == QEvent.Type.KeyPress:
             if (event.key() == Qt.Key.Key_Return
                     and not (event.modifiers() & Qt.KeyboardModifier.ShiftModifier)):
                 self._send()
                 return True
+
+        # Global keyboard event filter for the main window
+        if obj is self and event.type() == QEvent.Type.KeyPress:
+            # Escape key hides window from anywhere
+            if event.key() == Qt.Key.Key_Escape:
+                self.hide()
+                return True
+
+            # Redirect printable characters to input box
+            # Only if input box doesn't have focus and we're not in a text widget
+            if not self._input.hasFocus():
+                focused = QApplication.focusWidget()
+                # Don't redirect if user is typing in another text widget
+                if not isinstance(focused, QTextEdit):
+                    text = event.text()
+                    # Check if this is a printable character (not a modifier/control key)
+                    if text and text.isprintable() and not event.modifiers() & (
+                        Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.AltModifier
+                    ):
+                        self._input.setFocus()
+                        self._input.insertPlainText(text)
+                        return True
+
         return super().eventFilter(obj, event)
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key.Key_Escape:
-            self.hide()
+        # Escape handling is now in eventFilter for global coverage
         super().keyPressEvent(event)
 
     # ── Slots ─────────────────────────────────────────────────────────────────
