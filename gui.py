@@ -593,7 +593,7 @@ class ChatWindow(QMainWindow):
         header.setObjectName("header")
         header.setFixedHeight(50)
         row = QHBoxLayout(header)
-        row.setContentsMargins(16, 0, 16, 0)
+        row.setContentsMargins(0, 0, 0, 10)
         row.setSpacing(10)
 
         title = QLabel("Groq Chat")
