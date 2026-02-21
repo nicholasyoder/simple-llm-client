@@ -619,13 +619,6 @@ class ChatWindow(QMainWindow):
         self._input.installEventFilter(self)
         row.addWidget(self._input, 1)
 
-        self._send_btn = QPushButton("▲")
-        self._send_btn.setObjectName("sendBtn")
-        self._send_btn.setFixedSize(70, 72)
-        self._send_btn.setToolTip("Send message (Enter)")
-        self._send_btn.clicked.connect(self._send)
-        row.addWidget(self._send_btn)
-
         return footer
 
     # ── Event handling ────────────────────────────────────────────────────────
@@ -694,7 +687,6 @@ class ChatWindow(QMainWindow):
             return
 
         self._input.clear()
-        self._send_btn.setEnabled(False)
 
         # Show user message
         msg_id = f"msg-{len(self.messages)}"
@@ -754,7 +746,6 @@ class ChatWindow(QMainWindow):
         self._run_js(
             f"updateMessage(`{js_string(self._current_msg_id)}`, `{js_string(rendered)}`, false)"
         )
-        self._send_btn.setEnabled(True)
         self._input.setFocus()
 
     def _on_error(self, error: str):
@@ -780,7 +771,6 @@ class ChatWindow(QMainWindow):
         self._run_js(
             f"updateMessage(`{js_string(self._current_msg_id)}`, `{js_string(err_html)}`, false)"
         )
-        self._send_btn.setEnabled(True)
 
         # Show popup for critical errors
         if "authentication" in error.lower() or "401" in error:
