@@ -4,7 +4,3 @@ rich>=13.0.0
 PySide6>=6.6.0
 markdown>=3.5.0
 pygments>=2.16.0
-# pynput on Linux: install with --no-deps to avoid evdev build issues, then add:
-pynput>=1.7.0
-python-xlib>=0.33
-six>=1.16.0
