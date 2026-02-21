@@ -608,7 +608,7 @@ class ChatWindow(QMainWindow):
         footer = QWidget()
         footer.setObjectName("footer")
         row = QHBoxLayout(footer)
-        row.setContentsMargins(16, 10, 16, 10)
+        row.setContentsMargins(12, 10, 12, 10)
         row.setSpacing(8)
 
         self._input = QTextEdit()
