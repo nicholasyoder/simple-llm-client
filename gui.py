@@ -250,6 +250,20 @@ html, body {
   margin-left: 1px;
 }
 @keyframes blink { 50% { opacity: 0; } }
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: #181825;
+}
+::-webkit-scrollbar-thumb {
+  background: #45475a;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #585b70;
+}
 </style>
 </head>
 <body>
