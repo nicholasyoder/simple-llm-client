@@ -608,7 +608,7 @@ class ChatWindow(QMainWindow):
         footer = QWidget()
         footer.setObjectName("footer")
         row = QHBoxLayout(footer)
-        row.setContentsMargins(12, 10, 12, 10)
+        row.setContentsMargins(16, 10, 16, 10)
         row.setSpacing(8)
 
         self._input = QTextEdit()
@@ -992,7 +992,7 @@ def main():
     app.setQuitOnLastWindowClosed(False)
 
     window = ChatWindow(client, args.model, args.system, available_models)
-    window.show()
+    # Don't show window on startup - wait for DBus signal or tray click
 
     # DBus
     register_dbus_service(window)
