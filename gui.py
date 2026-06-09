@@ -779,6 +779,9 @@ class ChatWindow(QMainWindow):
 
     def _on_model_change(self, model: str):
         self.current_model = model
+        config = load_config()
+        config["model"] = model
+        save_config(config)
 
     def _clear_chat(self):
         self.messages = []
@@ -1077,7 +1080,7 @@ def register_dbus_service(window: "ChatWindow") -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Groq GUI chat client")
-    parser.add_argument("-m", "--model", default=DEFAULT_MODEL)
+    parser.add_argument("-m", "--model", default=None)
     parser.add_argument("-s", "--system", default=None, help="System prompt")
     parser.add_argument("--api-key", default=None)
     parser.add_argument(
@@ -1093,6 +1096,7 @@ def main():
         sys.exit(1)
 
     client = Groq(api_key=api_key)
+    model = args.model or load_config().get("model", DEFAULT_MODEL)
 
     # Fetch available models from API
     print("Fetching available models...")
@@ -1103,7 +1107,7 @@ def main():
     app.setApplicationName("Groq Chat")
     app.setQuitOnLastWindowClosed(False)
 
-    window = ChatWindow(client, args.model, args.system, available_models)
+    window = ChatWindow(client, model, args.system, available_models)
     # Don't show window on startup - wait for DBus signal or tray click
 
     # DBus
