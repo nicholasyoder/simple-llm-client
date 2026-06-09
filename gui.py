@@ -118,13 +118,13 @@ PAGE_HTML = """<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <link rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
+  href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
-  background: #1e1e2e;
-  color: #cdd6f4;
+  background: #1e1e1e;
+  color: #d4d4d4;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.65;
@@ -143,12 +143,12 @@ html, body {
   word-break: break-word;
 }
 .user {
-  background: #2a2a3d;
+  background: #2a2a2a;
   border-left: 3px solid #89b4fa;
   margin-left: 32px;
 }
 .assistant {
-  background: #181825;
+  background: #181818;
   border-left: 3px solid #a6e3a1;
   margin-right: 32px;
 }
@@ -165,20 +165,19 @@ html, body {
 .content p { margin: 0 0 8px; }
 .content p:last-child { margin-bottom: 0; }
 .content h1,.content h2,.content h3,.content h4 {
-  margin: 12px 0 6px; font-weight: 600; color: #cba6f7;
+  margin: 12px 0 6px; font-weight: 600;
 }
 .content ul,.content ol { margin: 6px 0 6px 20px; }
 .content li { margin-bottom: 2px; }
-.content a { color: #89dceb; }
-.content strong { color: #f5c2e7; }
-.content em { color: #fab387; }
+.content a { color: #aaaaaa; }
+.content strong { color: #cccccc; }
+.content em { color: #bbbbbb; }
 .content code {
-  background: #11111b;
+  background: #111111;
   border-radius: 4px;
   padding: 1px 5px;
   font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
   font-size: 13px;
-  color: #cba6f7;
 }
 .code-block-wrapper {
   position: relative;
@@ -188,8 +187,8 @@ html, body {
   position: absolute;
   top: 8px;
   right: 8px;
-  background: #313244;
-  color: #cdd6f4;
+  background: #333333;
+  color: #d4d4d4;
   border: none;
   border-radius: 4px;
   padding: 4px 8px;
@@ -202,19 +201,19 @@ html, body {
   opacity: 1;
 }
 .code-block-wrapper .copy-btn:hover {
-  background: #45475a;
+  background: #454545;
 }
 .code-block-wrapper .copy-btn:active {
-  background: #89b4fa;
-  color: #1e1e2e;
+  background: #888888;
+  color: #1e1e1e;
 }
 .content pre {
-  background: #11111b;
+  background: #111111;
   border-radius: 8px;
   padding: 14px;
   overflow-x: auto;
   margin: 0;
-  border: 1px solid #313244;
+  border: 1px solid #333333;
 }
 .content pre code {
   background: none;
@@ -229,16 +228,16 @@ html, body {
   width: 100%;
 }
 .content th, .content td {
-  border: 1px solid #45475a;
+  border: 1px solid #454545;
   padding: 6px 12px;
   text-align: left;
 }
-.content th { background: #313244; }
+.content th { background: #333333; }
 .content blockquote {
-  border-left: 3px solid #6c7086;
+  border-left: 3px solid #666666;
   padding-left: 12px;
   margin: 8px 0;
-  color: #a6adc8;
+  color: #aaaaaa;
 }
 .cursor {
   display: inline-block;
@@ -255,14 +254,14 @@ html, body {
   width: 12px;
 }
 ::-webkit-scrollbar-track {
-  background: #181825;
+  background: #181818;
 }
 ::-webkit-scrollbar-thumb {
-  background: #45475a;
+  background: #454545;
   border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #585b70;
+  background: #585858;
 }
 </style>
 </head>
@@ -407,54 +406,54 @@ class StreamWorker(QThread):
 
 APP_STYLE = """
 QMainWindow, QWidget#root {
-    background-color: #1e1e2e;
+    background-color: #1e1e1e;
     border-radius: 12px;
 }
 QWidget#footer {
-    background-color: #1e1e2e;
-    border-top: 1px solid #313244;
+    background-color: #1e1e1e;
+    border-top: 1px solid #333333;
 }
 QWidget#header {
-    background-color: #181825;
+    background-color: #181818;
     border-top-left-radius: 12px;
     border-top-right-radius: 12px;
 }
 QTextEdit {
-    background-color: #2a2a3d;
-    color: #cdd6f4;
-    border: 1px solid #45475a;
+    background-color: #2a2a2a;
+    color: #d4d4d4;
+    border: 1px solid #454545;
     border-radius: 8px;
     padding: 8px 10px;
     font-size: 14px;
     selection-background-color: #89b4fa;
-    selection-color: #1e1e2e;
+    selection-color: #1e1e1e;
 }
 QTextEdit:focus { border-color: #89b4fa; }
 QPushButton#sendBtn {
     background-color: #89b4fa;
-    color: #1e1e2e;
+    color: #1e1e1e;
     border: none;
     border-radius: 8px;
     font-weight: 700;
     font-size: 20px;
 }
 QPushButton#sendBtn:hover { background-color: #b4d0ff; }
-QPushButton#sendBtn:disabled { background-color: #45475a; color: #6c7086; }
+QPushButton#sendBtn:disabled { background-color: #454545; color: #666666; }
 QPushButton#clearBtn {
-    background-color: #313244;
-    color: #cdd6f4;
-    border: 1px solid #45475a;
+    background-color: #333333;
+    color: #d4d4d4;
+    border: 1px solid #454545;
     border-radius: 6px;
     padding: 0px;
     font-size: 19px;
     min-width: 28px;
     min-height: 28px;
 }
-QPushButton#clearBtn:hover { background-color: #45475a; }
+QPushButton#clearBtn:hover { background-color: #454545; }
 QComboBox {
-    background-color: #313244;
-    color: #cdd6f4;
-    border: 1px solid #45475a;
+    background-color: #333333;
+    color: #d4d4d4;
+    border: 1px solid #454545;
     border-radius: 6px;
     padding: 0px 8px;
     font-size: 12px;
@@ -463,43 +462,43 @@ QComboBox {
 QComboBox::drop-down { border: none; width: 20px; }
 QComboBox::down-arrow { width: 10px; }
 QComboBox QAbstractItemView {
-    background-color: #313244;
-    color: #cdd6f4;
+    background-color: #333333;
+    color: #d4d4d4;
     selection-background-color: #89b4fa;
-    selection-color: #1e1e2e;
-    border: 1px solid #45475a;
+    selection-color: #1e1e1e;
+    border: 1px solid #454545;
 }
 QLabel#title {
-    color: #cdd6f4;
+    color: #d4d4d4;
     font-weight: 600;
     font-size: 15px;
     padding-left: 4px;
 }
 QLabel#hotkey-hint {
-    color: #6c7086;
+    color: #666666;
     font-size: 11px;
 }
 QPushButton#systemBtn {
-    background-color: #313244;
-    color: #cdd6f4;
-    border: 1px solid #45475a;
+    background-color: #333333;
+    color: #d4d4d4;
+    border: 1px solid #454545;
     border-radius: 6px;
     padding: 0px;
     font-size: 15px;
     min-width: 28px;
     min-height: 28px;
 }
-QPushButton#systemBtn:hover { background-color: #45475a; }
+QPushButton#systemBtn:hover { background-color: #454545; }
 QPushButton#systemBtn[active="true"] {
-    color: #a6e3a1;
-    border-color: #a6e3a1;
+    color: #cccccc;
+    border-color: #888888;
 }
 QWidget#systemPanel {
-    background-color: #181825;
-    border-bottom: 1px solid #313244;
+    background-color: #181818;
+    border-bottom: 1px solid #333333;
 }
 QLabel#systemLabel {
-    color: #6c7086;
+    color: #666666;
     font-size: 10px;
     font-weight: 700;
 }
@@ -603,7 +602,7 @@ class ChatWindow(QMainWindow):
         separator = QWidget()
         separator.setObjectName("separator")
         separator.setFixedHeight(1)
-        separator.setStyleSheet("background-color: #313244;")
+        separator.setStyleSheet("background-color: #333333;")
         content_layout.addWidget(separator)
 
         self._system_panel = self._build_system_panel()
@@ -1126,7 +1125,7 @@ def main():
                 # Last resort: create a simple colored icon
                 from PySide6.QtGui import QPixmap
                 px = QPixmap(22, 22)
-                px.fill(QColor("#89b4fa"))
+                px.fill(QColor("#888888"))
                 tray_icon = QIcon(px)
 
         tray = QSystemTrayIcon(tray_icon, app)
