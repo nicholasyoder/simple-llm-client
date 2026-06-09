@@ -479,6 +479,30 @@ QLabel#hotkey-hint {
     color: #6c7086;
     font-size: 11px;
 }
+QPushButton#systemBtn {
+    background-color: #313244;
+    color: #cdd6f4;
+    border: 1px solid #45475a;
+    border-radius: 6px;
+    padding: 0px;
+    font-size: 15px;
+    min-width: 28px;
+    min-height: 28px;
+}
+QPushButton#systemBtn:hover { background-color: #45475a; }
+QPushButton#systemBtn[active="true"] {
+    color: #a6e3a1;
+    border-color: #a6e3a1;
+}
+QWidget#systemPanel {
+    background-color: #181825;
+    border-bottom: 1px solid #313244;
+}
+QLabel#systemLabel {
+    color: #6c7086;
+    font-size: 10px;
+    font-weight: 700;
+}
 """
 
 
@@ -492,7 +516,8 @@ class ChatWindow(QMainWindow):
         super().__init__()
         self.client = client
         self.current_model = model
-        self.system_prompt = system_prompt
+        config_prompt = load_config().get("system_prompt", "")
+        self.system_prompt: str = system_prompt if system_prompt is not None else config_prompt
         self.messages: list[dict] = []
         self.available_models = available_models or FALLBACK_MODELS
 
@@ -581,6 +606,9 @@ class ChatWindow(QMainWindow):
         separator.setStyleSheet("background-color: #313244;")
         content_layout.addWidget(separator)
 
+        self._system_panel = self._build_system_panel()
+        content_layout.addWidget(self._system_panel)
+
         self._view = QWebEngineView()
         self._view.settings().setAttribute(
             QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
@@ -616,6 +644,13 @@ class ChatWindow(QMainWindow):
         self._model_combo.currentTextChanged.connect(self._on_model_change)
         row.addWidget(self._model_combo)
 
+        self._system_btn = QPushButton("⚙")
+        self._system_btn.setObjectName("systemBtn")
+        self._system_btn.setToolTip("Toggle system prompt")
+        self._system_btn.setProperty("active", "true" if self.system_prompt else "false")
+        self._system_btn.clicked.connect(self._toggle_system_panel)
+        row.addWidget(self._system_btn)
+
         clear_btn = QPushButton("🗑")
         clear_btn.setObjectName("clearBtn")
         clear_btn.setToolTip("Clear conversation")
@@ -639,6 +674,57 @@ class ChatWindow(QMainWindow):
         row.addWidget(self._input, 1)
 
         return footer
+
+    def _build_system_panel(self) -> QWidget:
+        panel = QWidget()
+        panel.setObjectName("systemPanel")
+        panel.setVisible(False)
+        layout = QVBoxLayout(panel)
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(4)
+
+        label = QLabel("SYSTEM PROMPT")
+        label.setObjectName("systemLabel")
+        layout.addWidget(label)
+
+        self._system_edit = QTextEdit()
+        self._system_edit.setPlaceholderText("Enter a system prompt…")
+        self._system_edit.setFixedHeight(72)
+        self._system_edit.setPlainText(self.system_prompt)
+        self._system_edit.textChanged.connect(self._on_system_text_changed)
+        layout.addWidget(self._system_edit)
+
+        return panel
+
+    def _toggle_system_panel(self):
+        visible = not self._system_panel.isVisible()
+        self._system_panel.setVisible(visible)
+        if visible:
+            self._system_edit.setFocus()
+
+    def _on_system_text_changed(self):
+        text = self._system_edit.toPlainText()
+        self.system_prompt = text
+        active = "true" if text else "false"
+        self._system_btn.setProperty("active", active)
+        self._system_btn.style().unpolish(self._system_btn)
+        self._system_btn.style().polish(self._system_btn)
+        config = load_config()
+        config["system_prompt"] = text
+        save_config(config)
+
+    def _set_system_prompt(self, text: str) -> None:
+        self.system_prompt = text
+        self._system_edit.blockSignals(True)
+        self._system_edit.setPlainText(text)
+        self._system_edit.blockSignals(False)
+        active = "true" if text else "false"
+        self._system_btn.setProperty("active", active)
+        self._system_btn.style().unpolish(self._system_btn)
+        self._system_btn.style().polish(self._system_btn)
+        config = load_config()
+        config["system_prompt"] = text
+        save_config(config)
 
     # ── Event handling ────────────────────────────────────────────────────────
 
@@ -709,6 +795,15 @@ class ChatWindow(QMainWindow):
         if text == "/clear":
             self._input.clear()
             self._clear_chat()
+            return
+
+        if text.startswith("/system"):
+            arg = text[7:].strip()
+            self._input.clear()
+            if arg:
+                self._set_system_prompt(arg)
+            else:
+                self._toggle_system_panel()
             return
 
         self._input.clear()
